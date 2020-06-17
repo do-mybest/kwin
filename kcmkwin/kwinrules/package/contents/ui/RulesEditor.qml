@@ -16,9 +16,7 @@ import org.kde.kcms.kwinrules 1.0
 ScrollViewKCM {
     id: rulesEditor
 
-    property var rulesModel: kcm.rulesModel
-
-    title: rulesModel.description
+    title: kcm.rulesModel.description
 
     view: ListView {
         id: rulesView
@@ -72,7 +70,7 @@ ScrollViewKCM {
     header: Kirigami.InlineMessage {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        text: rulesModel.warningMessage
+        text: kcm.rulesModel.warningMessage
         visible: text != ""
     }
 
@@ -97,8 +95,8 @@ ScrollViewKCM {
             enabled: !propertySheet.sheetOpen && !errorSheet.sheetOpen
             onClicked: {
                 overlayModel.onlySuggestions = true;
-                rulesModel.detectWindowProperties(Math.max(delaySpin.value * 1000,
-                                                           Kirigami.Units.shortDuration));
+                kcm.rulesModel.detectWindowProperties(Math.max(delaySpin.value * 1000,
+                                                               Kirigami.Units.shortDuration));
             }
         }
         QQC2.SpinBox {
@@ -116,7 +114,7 @@ ScrollViewKCM {
     }
 
     Connections {
-        target: rulesModel
+        target: kcm.rulesModel
         function onShowSuggestions() {
             overlayModel.onlySuggestions = true;
             propertySheet.sheetOpen = true;
@@ -259,7 +257,7 @@ ScrollViewKCM {
 
     KSortFilterProxyModel {
         id: enabledRulesModel
-        sourceModel: rulesModel
+        sourceModel: kcm.rulesModel
         filterRowCallback: (source_row, source_parent) => {
             var index = sourceModel.index(source_row, 0, source_parent);
             return sourceModel.data(index, RulesModel.EnabledRole);
@@ -268,7 +266,7 @@ ScrollViewKCM {
 
     KSortFilterProxyModel {
         id: overlayModel
-        sourceModel: rulesModel
+        sourceModel: kcm.rulesModel
 
         property bool onlySuggestions: false
         onOnlySuggestionsChanged: {
