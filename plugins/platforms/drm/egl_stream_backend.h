@@ -9,9 +9,6 @@
 #ifndef KWIN_EGL_STREAM_BACKEND_H
 #define KWIN_EGL_STREAM_BACKEND_H
 #include "abstract_egl_backend.h"
-#include <KWaylandServer/surface_interface.h>
-#include <KWaylandServer/eglstream_controller_interface.h>
-#include <wayland-server-core.h>
 
 namespace KWin
 {
@@ -48,15 +45,6 @@ private:
     bool initializeEgl();
     bool initBufferConfigs();
     bool initRenderingContext();
-    struct StreamTexture 
-    {
-        EGLStreamKHR stream;
-        GLuint texture;
-    };
-    StreamTexture *lookupStreamTexture(KWaylandServer::SurfaceInterface *surface);
-    void attachStreamConsumer(KWaylandServer::SurfaceInterface *surface,
-                              void *eglStream,
-                              wl_array *attribs);
     struct Output 
     {
         DrmOutput *output = nullptr;
@@ -73,10 +61,6 @@ private:
     DrmBackend *m_backend;
     DrmGpu *m_gpu;
     QVector<Output> m_outputs;
-    KWaylandServer::EglStreamControllerInterface *m_eglStreamControllerInterface;
-    QHash<KWaylandServer::SurfaceInterface *, StreamTexture> m_streamTextures;
-
-    friend class EglStreamTexture;
 };
 
 /**
@@ -86,18 +70,9 @@ class EglStreamTexture : public AbstractEglTexture
 {
 public:
     ~EglStreamTexture() override;
-    bool loadTexture(WindowPixmap *pixmap) override;
-    void updateTexture(WindowPixmap *pixmap) override;
 
 private:
     EglStreamTexture(SceneOpenGLTexture *texture, EglStreamBackend *backend);
-    bool acquireStreamFrame(EGLStreamKHR stream);
-    void createFbo();
-    void copyExternalTexture(GLuint tex);
-    bool attachBuffer(KWaylandServer::BufferInterface *buffer);
-    EglStreamBackend *m_backend;
-    GLuint m_fbo, m_rbo;
-    GLenum m_format;
     friend class EglStreamBackend;
 };
 

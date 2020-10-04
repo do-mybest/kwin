@@ -502,16 +502,16 @@ bool EglTexture::loadTexture(xcb_pixmap_t pix, const QSize &size)
         EGL_IMAGE_PRESERVED_KHR, EGL_TRUE,
         EGL_NONE
     };
-    setImage(eglCreateImageKHR(m_backend->eglDisplay(), EGL_NO_CONTEXT, EGL_NATIVE_PIXMAP_KHR,
-                               (EGLClientBuffer)pix, attribs));
+    m_image = eglCreateImageKHR(m_backend->eglDisplay(), EGL_NO_CONTEXT, EGL_NATIVE_PIXMAP_KHR,
+                               (EGLClientBuffer)pix, attribs);
 
-    if (EGL_NO_IMAGE_KHR == image()) {
+    if (EGL_NO_IMAGE_KHR == m_image) {
         qCDebug(KWIN_CORE) << "failed to create egl image";
         q->unbind();
         q->discard();
         return false;
     }
-    glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)image());
+    glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)m_image);
     q->unbind();
     q->setYInverted(true);
     m_size = size;
@@ -525,7 +525,7 @@ void KWin::EglTexture::onDamage()
         // This is just implemented to be consistent with
         // the example in mesa/demos/src/egl/opengles1/texture_from_pixmap.c
         eglWaitNative(EGL_CORE_NATIVE_ENGINE);
-        glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES) image());
+        glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES) m_image);
     }
     GLTexturePrivate::onDamage();
 }

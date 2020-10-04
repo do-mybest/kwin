@@ -38,7 +38,6 @@
 #include "decorations/decoratedclient.h"
 #include <logging.h>
 
-#include <KWaylandServer/buffer_interface.h>
 #include <KWaylandServer/subcompositor_interface.h>
 #include <KWaylandServer/surface_interface.h>
 
@@ -1660,14 +1659,6 @@ bool OpenGLWindowPixmap::bind()
 WindowPixmap *OpenGLWindowPixmap::createChild(const QPointer<KWaylandServer::SubSurfaceInterface> &subSurface)
 {
     return new OpenGLWindowPixmap(subSurface, this, m_scene);
-}
-
-bool OpenGLWindowPixmap::isValid() const
-{
-    if (!m_texture->isNull()) {
-        return true;
-    }
-    return WindowPixmap::isValid();
 }
 
 //****************************************

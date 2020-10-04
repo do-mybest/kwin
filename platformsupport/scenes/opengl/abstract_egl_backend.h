@@ -11,21 +11,17 @@
 #include "backend.h"
 #include "texture.h"
 
+#include <KWaylandServer/clientbufferref.h>
+
 #include <QObject>
 #include <epoxy/egl.h>
 #include <fixx11h.h>
 
 class QOpenGLFramebufferObject;
 
-namespace KWaylandServer
-{
-class BufferInterface;
-}
-
 namespace KWin
 {
 
-class EglDmabuf;
 class AbstractOutput;
 
 class KWIN_EXPORT AbstractEglBackend : public QObject, public OpenGLBackend
@@ -63,6 +59,7 @@ protected:
     void initBufferAge();
     void initClientExtensions();
     void initWayland();
+    void finishWayland();
     bool hasClientExtension(const QByteArray &ext) const;
     bool isOpenGLES() const;
 
@@ -76,7 +73,6 @@ private:
     EGLContext m_context = EGL_NO_CONTEXT;
     EGLConfig m_config = nullptr;
     QList<QByteArray> m_clientExtensions;
-    EglDmabuf *m_dmaBuf = nullptr;
 };
 
 class KWIN_EXPORT AbstractEglTexture : public SceneOpenGLTexturePrivate
@@ -89,12 +85,7 @@ public:
 
 protected:
     AbstractEglTexture(SceneOpenGLTexture *texture, AbstractEglBackend *backend);
-    EGLImageKHR image() const {
-        return m_image;
-    }
-    void setImage(const EGLImageKHR &img) {
-        m_image = img;
-    }
+
     SceneOpenGLTexture *texture() const {
         return q;
     }
@@ -102,16 +93,12 @@ protected:
 private:
     void createTextureSubImage(const QImage &image, const QRegion &damage);
     bool createTextureImage(const QImage &image);
-    bool loadShmTexture(const QPointer<KWaylandServer::BufferInterface> &buffer);
-    bool loadEglTexture(const QPointer<KWaylandServer::BufferInterface> &buffer);
-    bool loadDmabufTexture(const QPointer< KWaylandServer::BufferInterface > &buffer);
     bool loadInternalImageObject(WindowPixmap *pixmap);
-    EGLImageKHR attach(const QPointer<KWaylandServer::BufferInterface> &buffer);
     bool updateFromFBO(const QSharedPointer<QOpenGLFramebufferObject> &fbo);
     bool updateFromInternalImageObject(WindowPixmap *pixmap);
     SceneOpenGLTexture *q;
     AbstractEglBackend *m_backend;
-    EGLImageKHR m_image;
+    KWaylandServer::OpenGLClientBufferRef m_textureRef;
 };
 
 }

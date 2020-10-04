@@ -90,6 +90,7 @@ private:
     friend class EglOnXBackend;
     EglTexture(SceneOpenGLTexture *texture, EglOnXBackend *backend);
     EglOnXBackend *m_backend;
+    EGLImageKHR m_image = EGL_NO_IMAGE_KHR;
 };
 
 } // namespace

@@ -37,7 +37,6 @@
 #include <KWaylandServer/dpms_interface.h>
 #include <KWaylandServer/idle_interface.h>
 #include <KWaylandServer/idleinhibit_v1_interface.h>
-#include <KWaylandServer/linuxdmabuf_v1_interface.h>
 #include <KWaylandServer/output_interface.h>
 #include <KWaylandServer/plasmashell_interface.h>
 #include <KWaylandServer/plasmavirtualdesktop_interface.h>
@@ -382,7 +381,6 @@ bool WaylandServer::init(const QByteArray &socketName, InitializationFlags flags
     );
 
     m_display->createViewporter();
-    m_display->createShm();
     m_seat = m_display->createSeat(m_display);
     m_seat->create();
     m_display->createPointerGestures(PointerGesturesInterfaceVersion::UnstableV1, m_display)->create();
@@ -492,15 +490,6 @@ bool WaylandServer::init(const QByteArray &socketName, InitializationFlags flags
     m_inputMethod = m_display->createInputMethodInterface(m_display);
 
     return true;
-}
-
-KWaylandServer::LinuxDmabufUnstableV1Interface *WaylandServer::linuxDmabuf()
-{
-    if (!m_linuxDmabuf) {
-        m_linuxDmabuf = m_display->createLinuxDmabufInterface(m_display);
-        m_linuxDmabuf->create();
-    }
-    return m_linuxDmabuf;
 }
 
 SurfaceInterface *WaylandServer::findForeignTransientForSurface(SurfaceInterface *surface)

@@ -14,6 +14,8 @@
 #include "utils.h"
 #include "kwineffects.h"
 
+#include <KWaylandServer/clientbufferref.h>
+
 #include <QElapsedTimer>
 #include <QMatrix4x4>
 
@@ -21,7 +23,6 @@ class QOpenGLFramebufferObject;
 
 namespace KWaylandServer
 {
-class BufferInterface;
 class SubSurfaceInterface;
 }
 
@@ -451,7 +452,7 @@ public:
     /**
      * @return The Wayland BufferInterface for this WindowPixmap.
      */
-    KWaylandServer::BufferInterface *buffer() const;
+    KWaylandServer::ClientBufferRef buffer() const;
     const QSharedPointer<QOpenGLFramebufferObject> &fbo() const;
     QImage internalImage() const;
     /**
@@ -578,7 +579,7 @@ protected:
     }
 
 private:
-    void setBuffer(KWaylandServer::BufferInterface *buffer);
+    void setBuffer(KWaylandServer::ClientBufferRef buffer);
     void clear();
 
     Scene::Window *m_window;
@@ -586,7 +587,7 @@ private:
     QSize m_pixmapSize;
     bool m_discarded;
     QRect m_contentsRect;
-    KWaylandServer::BufferInterface *m_buffer = nullptr;
+    KWaylandServer::ClientBufferRef m_buffer = nullptr;
     QSharedPointer<QOpenGLFramebufferObject> m_fbo;
     QImage m_internalImage;
     WindowPixmap *m_parent = nullptr;
@@ -684,7 +685,7 @@ Shadow* Scene::Window::shadow()
 }
 
 inline
-KWaylandServer::BufferInterface *WindowPixmap::buffer() const
+KWaylandServer::ClientBufferRef WindowPixmap::buffer() const
 {
     return m_buffer;
 }

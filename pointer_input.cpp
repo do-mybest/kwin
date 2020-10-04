@@ -22,7 +22,6 @@
 // KDecoration
 #include <KDecoration2/Decoration>
 // KWayland
-#include <KWaylandServer/buffer_interface.h>
 #include <KWaylandServer/datadevice_interface.h>
 #include <KWaylandServer/display.h>
 #include <KWaylandServer/pointerconstraints_interface.h>
@@ -1086,14 +1085,14 @@ void CursorImage::updateServerCursor()
         return;
     }
     auto buffer = cursorSurface.data()->buffer();
-    if (!buffer) {
+    if (buffer.isNull()) {
         if (needsEmit) {
             emit changed();
         }
         return;
     }
     m_serverCursor.cursor.hotspot = c->hotspot();
-    m_serverCursor.cursor.image = buffer->data().copy();
+    m_serverCursor.cursor.image = buffer.toImage().copy();
     m_serverCursor.cursor.image.setDevicePixelRatio(cursorSurface->bufferScale());
     if (needsEmit) {
         emit changed();
@@ -1154,7 +1153,7 @@ void CursorImage::updateDragCursor()
     if (auto ddi = waylandServer()->seat()->dragSource()) {
         if (auto dragIcon = ddi->icon()) {
             if (auto buffer = dragIcon->buffer()) {
-                additionalIcon = buffer->data().copy();
+                additionalIcon = buffer.toImage().copy();
                 additionalIcon.setDevicePixelRatio(dragIcon->bufferScale());
                 additionalIcon.setOffset(dragIcon->offset());
             }
@@ -1182,14 +1181,14 @@ void CursorImage::updateDragCursor()
         return;
     }
     auto buffer = cursorSurface.data()->buffer();
-    if (!buffer) {
+    if (buffer.isNull()) {
         if (needsEmit) {
             emit changed();
         }
         return;
     }
 
-    QImage cursorImage = buffer->data();
+    QImage cursorImage = buffer.toImage();
     cursorImage.setDevicePixelRatio(cursorSurface->bufferScale());
 
     if (additionalIcon.isNull()) {
