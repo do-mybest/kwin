@@ -142,7 +142,7 @@ public:
         return m_clients;
     }
     void removeClient(AbstractClient *c);
-    AbstractClient *findClient(KWaylandServer::SurfaceInterface *surface) const;
+    AbstractClient *findClient(const KWaylandServer::SurfaceInterface *surface) const;
     XdgToplevelClient *findXdgToplevelClient(KWaylandServer::SurfaceInterface *surface) const;
     XdgSurfaceClient *findXdgSurfaceClient(KWaylandServer::SurfaceInterface *surface) const;
 
@@ -257,6 +257,7 @@ private:
     void registerXdgToplevelClient(XdgToplevelClient *client);
     void registerXdgPopupClient(XdgPopupClient *client);
     void registerShellClient(AbstractClient *client);
+
     KWaylandServer::Display *m_display = nullptr;
     KWaylandServer::CompositorInterface *m_compositor = nullptr;
     KWaylandServer::SeatInterface *m_seat = nullptr;
@@ -293,6 +294,7 @@ private:
     KWaylandServer::XdgForeignV2Interface *m_XdgForeign = nullptr;
     KWaylandServer::KeyStateInterface *m_keyState = nullptr;
     QList<AbstractClient *> m_clients;
+
     InitializationFlags m_initFlags;
     QVector<KWaylandServer::PlasmaShellSurfaceInterface*> m_plasmaShellSurfaces;
     KWIN_SINGLETON(WaylandServer)

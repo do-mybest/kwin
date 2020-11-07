@@ -15,6 +15,7 @@
 #include "platform.h"
 #include "effects.h"
 #include "tabletmodemanager.h"
+#include "xdgactivationv1.h"
 
 #include "wayland_server.h"
 #include "xwl/xwayland.h"
@@ -159,6 +160,7 @@ void ApplicationWayland::performStartup()
     createBackend();
     TabletModeManager::create(this);
     createPlugins();
+    new XdgActivationV1Integration(this);
 }
 
 void ApplicationWayland::createBackend()

@@ -506,6 +506,7 @@ bool WaylandServer::init(const QByteArray &socketName, InitializationFlags flags
     return true;
 }
 
+
 KWaylandServer::LinuxDmabufUnstableV1Interface *WaylandServer::linuxDmabuf()
 {
     if (!m_linuxDmabuf) {
@@ -747,7 +748,7 @@ void WaylandServer::dispatch()
     m_display->dispatchEvents(0);
 }
 
-static AbstractClient *findClientInList(const QList<AbstractClient *> &clients, KWaylandServer::SurfaceInterface *surface)
+static AbstractClient *findClientInList(const QList<AbstractClient *> &clients, const KWaylandServer::SurfaceInterface *surface)
 {
     auto it = std::find_if(clients.begin(), clients.end(),
         [surface] (AbstractClient *c) {
@@ -760,7 +761,7 @@ static AbstractClient *findClientInList(const QList<AbstractClient *> &clients, 
     return *it;
 }
 
-AbstractClient *WaylandServer::findClient(SurfaceInterface *surface) const
+AbstractClient* WaylandServer::findClient(const KWaylandServer::SurfaceInterface *surface) const
 {
     if (!surface) {
         return nullptr;
