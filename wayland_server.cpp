@@ -328,8 +328,15 @@ bool WaylandServer::start()
 
 bool WaylandServer::init(const QByteArray &socketName, InitializationFlags flags)
 {
+    if (!m_display->addSocketName(socketName)) {
+        return false;
+    }
+    return init(flags);
+}
+
+bool WaylandServer::init(InitializationFlags flags)
+{
     m_initFlags = flags;
-    m_display->addSocketName(QString::fromUtf8(socketName));
     m_compositor = m_display->createCompositor(m_display);
     connect(m_compositor, &CompositorInterface::surfaceCreated, this,
         [this] (SurfaceInterface *surface) {
@@ -340,7 +347,7 @@ bool WaylandServer::init(const QByteArray &socketName, InitializationFlags flags
                 return;
             }
             if (surface->client() != xWaylandConnection()) {
-                // setting surface is only relevat for Xwayland clients
+                // setting surface is only relevant for Xwayland clients
                 return;
             }
 
