@@ -9,7 +9,6 @@
 #ifndef KWIN_EGL_ON_X_BACKEND_H
 #define KWIN_EGL_ON_X_BACKEND_H
 #include "abstract_egl_backend.h"
-#include "swap_profiler.h"
 
 #include <xcb/xcb.h>
 
@@ -70,7 +69,6 @@ private:
     xcb_window_t m_renderingWindow = XCB_WINDOW_NONE;
     bool m_havePlatformBase = false;
     bool m_x11TextureFromPixmapSupported = true;
-    SwapProfiler m_swapProfiler;
     friend class EglTexture;
 };
 
