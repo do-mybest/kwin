@@ -125,16 +125,6 @@ bool EglHwcomposerBackend::makeContextCurrent()
     return true;
 }
 
-void EglHwcomposerBackend::present()
-{
-    if (lastDamage().isEmpty()) {
-        return;
-    }
-
-    eglSwapBuffers(eglDisplay(), surface());
-    setLastDamage(QRegion());
-}
-
 void EglHwcomposerBackend::screenGeometryChanged(const QSize &size)
 {
     Q_UNUSED(size)
@@ -143,8 +133,6 @@ void EglHwcomposerBackend::screenGeometryChanged(const QSize &size)
 QRegion EglHwcomposerBackend::beginFrame(int screenId)
 {
     Q_UNUSED(screenId)
-    present();
-
     // TODO: buffer age?
     // triggers always a full repaint
     return QRegion(QRect(QPoint(0, 0), m_backend->size()));
@@ -153,8 +141,9 @@ QRegion EglHwcomposerBackend::beginFrame(int screenId)
 void EglHwcomposerBackend::endFrame(int screenId, const QRegion &renderedRegion, const QRegion &damagedRegion)
 {
     Q_UNUSED(screenId)
+    Q_UNUSED(renderedRegion)
     Q_UNUSED(damagedRegion)
-    setLastDamage(renderedRegion);
+    eglSwapBuffers(eglDisplay(), surface());
 }
 
 SceneOpenGLTexturePrivate *EglHwcomposerBackend::createBackendTexture(SceneOpenGLTexture *texture)

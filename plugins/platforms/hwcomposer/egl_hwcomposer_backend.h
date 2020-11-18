@@ -28,9 +28,6 @@ public:
     void endFrame(int screenId, const QRegion &renderedRegion, const QRegion &damagedRegion) override;
     void init() override;
 
-protected:
-    void present() override;
-
 private:
     bool initializeEgl();
     bool initRenderingContext();
