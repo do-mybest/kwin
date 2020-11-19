@@ -7,8 +7,11 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 #include "scene_qpainter_x11_backend.h"
-#include "x11windowed_backend.h"
+#include "main.h"
 #include "screens.h"
+#include "softwarevsyncmonitor.h"
+#include "x11windowed_backend.h"
+#include "x11windowed_output.h"
 
 namespace KWin
 {
@@ -55,7 +58,8 @@ bool X11WindowedQPainterBackend::needsFullRepaint(int screenId) const
 
 void X11WindowedQPainterBackend::beginFrame(int screenId)
 {
-    Q_UNUSED(screenId)
+    X11WindowedOutput *output = static_cast<X11WindowedOutput *>(kwinApp()->platform()->findOutput(screenId));
+    output->vsyncMonitor()->start();
 }
 
 void X11WindowedQPainterBackend::endFrame(int screenId, int mask, const QRegion &damage)

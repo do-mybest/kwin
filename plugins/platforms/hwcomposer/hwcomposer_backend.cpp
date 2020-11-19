@@ -12,6 +12,7 @@
 #include "screens_hwcomposer.h"
 #include "composite.h"
 #include "main.h"
+#include "renderloop.h"
 #include "wayland_server.h"
 // KWayland
 #include <KWaylandServer/output_interface.h>
@@ -477,6 +478,7 @@ void HwcomposerWindow::present(HWComposerNativeWindowBuffer *buffer)
 HwcomposerOutput::HwcomposerOutput(hwc_composer_device_1_t *device)
     : AbstractWaylandOutput()
     , m_device(device)
+    , m_renderLoop(new RenderLoop(this))
 {
     uint32_t configs[5];
     size_t numConfigs = 5;
@@ -516,6 +518,8 @@ HwcomposerOutput::HwcomposerOutput(hwc_composer_device_1_t *device)
     mode.flags = OutputDeviceInterface::ModeFlag::Current | OutputDeviceInterface::ModeFlag::Preferred;
     mode.refreshRate = (attr_values[4] == 0) ? 60000 : 10E11/attr_values[4];
 
+    m_renderLoop->setRefreshRate(mode.refreshRate);
+
     initInterfaces(QString(), QString(), QByteArray(), physicalSize.toSize(), {mode});
     setInternal(true);
     setDpmsSupported(true);
@@ -528,6 +532,11 @@ HwcomposerOutput::HwcomposerOutput(hwc_composer_device_1_t *device)
 HwcomposerOutput::~HwcomposerOutput()
 {
     hwc_close_1(m_device);
+}
+
+RenderLoop *HwcomposerOutput::renderLoop() const
+{
+    return m_renderLoop;
 }
 
 bool HwcomposerOutput::isValid() const

@@ -12,6 +12,8 @@
 #include "virtual_backend.h"
 #include "options.h"
 #include "screens.h"
+#include "softwarevsyncmonitor.h"
+#include "virtual_output.h"
 #include <logging.h>
 // kwin libs
 #include <kwinglplatform.h>
@@ -154,7 +156,9 @@ SceneOpenGLTexturePrivate *EglGbmBackend::createBackendTexture(SceneOpenGLTextur
 
 QRegion EglGbmBackend::beginFrame(int screenId)
 {
-    Q_UNUSED(screenId)
+    VirtualOutput *output = static_cast<VirtualOutput *>(m_backend->findOutput(screenId));
+    output->vsyncMonitor()->start();
+
     if (!GLRenderTarget::isRenderTargetBound()) {
         GLRenderTarget::pushRenderTarget(m_fbo);
     }
@@ -206,9 +210,7 @@ void EglGbmBackend::endFrame(int screenId, const QRegion &renderedRegion, const 
     }
     GLRenderTarget::popRenderTarget();
 
-    Compositor::self()->aboutToSwapBuffers();
     eglSwapBuffers(eglDisplay(), surface());
-    Compositor::self()->bufferSwapComplete();
 }
 
 bool EglGbmBackend::usesOverlayWindow() const

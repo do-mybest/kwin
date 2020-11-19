@@ -38,6 +38,7 @@ class OpenGLBackend;
 class Outline;
 class OutlineVisual;
 class QPainterBackend;
+class RenderLoop;
 class Scene;
 class Screens;
 class ScreenEdges;
@@ -458,6 +459,12 @@ public:
      * Returns @c true if rendering is split per screen; otherwise returns @c false.
      */
     bool isPerScreenRenderingEnabled() const;
+
+    /**
+     * If the Platform doesn't support per screen rendering, this function returns the
+     * RenderLoop that drives compositing.
+     */
+    virtual RenderLoop *renderLoop() const;
 
 public Q_SLOTS:
     void pointerMotion(const QPointF &position, quint32 time);

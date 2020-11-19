@@ -15,11 +15,15 @@
 #include "glxbackend.h"
 #include "logging.h"
 #include "glx_context_attribute_builder.h"
+#include "omlsynccontrolvsyncmonitor.h"
+#include "sgivideosyncvsyncmonitor.h"
+#include "softwarevsyncmonitor.h"
 // kwin
 #include "options.h"
 #include "overlaywindow.h"
 #include "composite.h"
 #include "platform.h"
+#include "renderloop_p.h"
 #include "scene.h"
 #include "screens.h"
 #include "xcbutils.h"
@@ -42,59 +46,15 @@
 #include <dlfcn.h>
 #endif
 
-#ifndef XCB_GLX_BUFFER_SWAP_COMPLETE
-#define XCB_GLX_BUFFER_SWAP_COMPLETE 1
-typedef struct xcb_glx_buffer_swap_complete_event_t {
-    uint8_t            response_type; /**<  */
-    uint8_t            pad0; /**<  */
-    uint16_t           sequence; /**<  */
-    uint16_t           event_type; /**<  */
-    uint8_t            pad1[2]; /**<  */
-    xcb_glx_drawable_t drawable; /**<  */
-    uint32_t           ust_hi; /**<  */
-    uint32_t           ust_lo; /**<  */
-    uint32_t           msc_hi; /**<  */
-    uint32_t           msc_lo; /**<  */
-    uint32_t           sbc; /**<  */
-} xcb_glx_buffer_swap_complete_event_t;
-#endif
-
 #include <tuple>
 
 namespace KWin
 {
 
-SwapEventFilter::SwapEventFilter(xcb_drawable_t drawable, xcb_glx_drawable_t glxDrawable)
-    : X11EventFilter(Xcb::Extensions::self()->glxEventBase() + XCB_GLX_BUFFER_SWAP_COMPLETE),
-      m_drawable(drawable),
-      m_glxDrawable(glxDrawable)
-{
-}
-
-bool SwapEventFilter::event(xcb_generic_event_t *event)
-{
-    xcb_glx_buffer_swap_complete_event_t *ev =
-            reinterpret_cast<xcb_glx_buffer_swap_complete_event_t *>(event);
-
-    // The drawable field is the X drawable when the event was synthesized
-    // by a WireToEvent handler, and the GLX drawable when the event was
-    // received over the wire
-    if (ev->drawable == m_drawable || ev->drawable == m_glxDrawable) {
-        Compositor::self()->bufferSwapComplete();
-        return true;
-    }
-
-    return false;
-}
-
-
-// -----------------------------------------------------------------------
-
-
-
 GlxBackend::GlxBackend(Display *display)
     : OpenGLBackend()
     , m_overlayWindow(kwinApp()->platform()->createOverlayWindow())
+    , m_vsyncMonitor(nullptr)
     , window(None)
     , fbconfig(nullptr)
     , glxWindow(None)
@@ -194,14 +154,6 @@ void GlxBackend::init()
     m_haveMESASwapControl   = hasExtension(QByteArrayLiteral("GLX_MESA_swap_control"));
     m_haveEXTSwapControl    = hasExtension(QByteArrayLiteral("GLX_EXT_swap_control"));
     m_haveSGISwapControl    = hasExtension(QByteArrayLiteral("GLX_SGI_swap_control"));
-    // only enable Intel swap event if env variable is set, see BUG 342582
-    m_haveINTELSwapEvent    = hasExtension(QByteArrayLiteral("GLX_INTEL_swap_event"))
-                                && qgetenv("KWIN_USE_INTEL_SWAP_EVENT") == QByteArrayLiteral("1");
-
-    if (m_haveINTELSwapEvent) {
-        m_swapEventFilter = std::make_unique<SwapEventFilter>(window, glxWindow);
-        glXSelectEvent(display(), glxWindow, GLX_BUFFER_SWAP_COMPLETE_INTEL_MASK);
-    }
 
     bool haveSwapInterval = m_haveMESASwapControl || m_haveEXTSwapControl || m_haveSGISwapControl;
 
@@ -214,12 +166,10 @@ void GlxBackend::init()
             setSupportsBufferAge(true);
     }
 
-    setSyncsToVBlank(false);
     const bool wantSync = options->glPreferBufferSwap() != Options::NoSwapEncourage;
     if (wantSync && glXIsDirect(display(), ctx)) {
         if (haveSwapInterval) { // glXSwapInterval is preferred being more reliable
             setSwapInterval(1);
-            setSyncsToVBlank(true);
         } else {
             qCWarning(KWIN_X11STANDALONE) << "NO VSYNC! glSwapInterval is not supported";
         }
@@ -233,6 +183,27 @@ void GlxBackend::init()
         // and the GLPlatform has not been initialized at the moment when initGLX() is called.
         glXQueryDrawable = nullptr;
     }
+
+    const QString requestedVsync = qEnvironmentVariable("KWIN_X11_VSYNC");
+    if (!requestedVsync.isEmpty()) {
+        if (requestedVsync == QLatin1String("software")) {
+            m_vsyncMonitor = SoftwareVsyncMonitor::create(this);
+        } else if (requestedVsync == QLatin1String("GLX_SGI_video_sync")) {
+            m_vsyncMonitor = SGIVideoSyncVsyncMonitor::create(this);
+        } else if (requestedVsync == QLatin1String("GLX_OML_sync_control")) {
+            m_vsyncMonitor = OMLSyncControlVsyncMonitor::create(this);
+        }
+    }
+    if (!m_vsyncMonitor) {
+        m_vsyncMonitor = SGIVideoSyncVsyncMonitor::create(this);
+    }
+    if (!m_vsyncMonitor) {
+        m_vsyncMonitor = OMLSyncControlVsyncMonitor::create(this);
+    }
+    if (!m_vsyncMonitor) {
+        m_vsyncMonitor = SoftwareVsyncMonitor::create(this);
+    }
+    connect(m_vsyncMonitor, &VsyncMonitor::vblankOccurred, this, &GlxBackend::vblank);
 
     setIsDirectRendering(bool(glXIsDirect(display(), ctx)));
 
@@ -674,9 +645,6 @@ void GlxBackend::present(const QRegion &damage)
     const bool fullRepaint = supportsBufferAge() || (damage == displayRegion);
 
     if (fullRepaint) {
-        if (m_haveINTELSwapEvent)
-            Compositor::self()->aboutToSwapBuffers();
-
         glXSwapBuffers(display(), glxWindow);
         if (supportsBufferAge()) {
             glXQueryDrawable(display(), glxWindow, GLX_BACK_BUFFER_AGE_EXT, (GLuint *) &m_bufferAge);
@@ -722,6 +690,8 @@ SceneOpenGLTexturePrivate *GlxBackend::createBackendTexture(SceneOpenGLTexture *
 QRegion GlxBackend::beginFrame(int screenId)
 {
     Q_UNUSED(screenId)
+    m_vsyncMonitor->start();
+
     QRegion repaint;
     makeCurrent();
 
@@ -760,6 +730,12 @@ void GlxBackend::endFrame(int screenId, const QRegion &renderedRegion, const QRe
     // Save the damaged region to history
     if (supportsBufferAge())
         addToDamageHistory(damagedRegion);
+}
+
+void GlxBackend::vblank(std::chrono::nanoseconds timestamp)
+{
+    RenderLoopPrivate *renderLoopPrivate = RenderLoopPrivate::get(kwinApp()->platform()->renderLoop());
+    renderLoopPrivate->notifyFrameCompleted(timestamp);
 }
 
 bool GlxBackend::makeCurrent()

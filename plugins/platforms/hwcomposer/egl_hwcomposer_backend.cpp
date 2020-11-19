@@ -19,7 +19,6 @@ EglHwcomposerBackend::EglHwcomposerBackend(HwcomposerBackend *backend)
 {
     // EGL is always direct rendering
     setIsDirectRendering(true);
-    setSyncsToVBlank(true);
 }
 
 EglHwcomposerBackend::~EglHwcomposerBackend()

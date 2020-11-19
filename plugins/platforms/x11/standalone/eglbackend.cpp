@@ -6,10 +6,15 @@
 */
 
 #include "eglbackend.h"
+#include "omlsynccontrolvsyncmonitor.h"
 #include "options.h"
 #include "overlaywindow.h"
+#include "platform.h"
+#include "renderloop_p.h"
 #include "scene.h"
 #include "screens.h"
+#include "sgivideosyncvsyncmonitor.h"
+#include "softwarevsyncmonitor.h"
 
 namespace KWin
 {
@@ -17,6 +22,34 @@ namespace KWin
 EglBackend::EglBackend(Display *display)
     : EglOnXBackend(display)
 {
+}
+
+void EglBackend::init()
+{
+    EglOnXBackend::init();
+
+    if (!isFailed()) {
+        const QString requestedVsync = qEnvironmentVariable("KWIN_X11_VSYNC");
+        if (!requestedVsync.isEmpty()) {
+            if (requestedVsync == QLatin1String("software")) {
+                m_vsyncMonitor = SoftwareVsyncMonitor::create(this);
+            } else if (requestedVsync == QLatin1String("GLX_SGI_video_sync")) {
+                m_vsyncMonitor = SGIVideoSyncVsyncMonitor::create(this);
+            } else if (requestedVsync == QLatin1String("GLX_OML_sync_control")) {
+                m_vsyncMonitor = OMLSyncControlVsyncMonitor::create(this);
+            }
+        }
+        if (!m_vsyncMonitor) {
+            m_vsyncMonitor = SGIVideoSyncVsyncMonitor::create(this);
+        }
+        if (!m_vsyncMonitor) {
+            m_vsyncMonitor = OMLSyncControlVsyncMonitor::create(this);
+        }
+        if (!m_vsyncMonitor) {
+            m_vsyncMonitor = SoftwareVsyncMonitor::create(this);
+        }
+        connect(m_vsyncMonitor, &VsyncMonitor::vblankOccurred, this, &EglBackend::vblank);
+    }
 }
 
 SceneOpenGLTexturePrivate *EglBackend::createBackendTexture(SceneOpenGLTexture *texture)
@@ -37,6 +70,9 @@ void EglBackend::screenGeometryChanged(const QSize &size)
 QRegion EglBackend::beginFrame(int screenId)
 {
     Q_UNUSED(screenId)
+
+    m_vsyncMonitor->start();
+
     QRegion repaint;
     if (supportsBufferAge())
         repaint = accumulatedDamageHistory(m_bufferAge);
@@ -97,6 +133,12 @@ void EglBackend::presentSurface(EGLSurface surface, const QRegion &damage, const
             eglPostSubBufferNV(eglDisplay(), surface, r.left(), screenGeometry.height() - r.bottom() - 1, r.width(), r.height());
         }
     }
+}
+
+void EglBackend::vblank(std::chrono::nanoseconds timestamp)
+{
+    RenderLoopPrivate *renderLoopPrivate = RenderLoopPrivate::get(kwinApp()->platform()->renderLoop());
+    renderLoopPrivate->notifyFrameCompleted(timestamp);
 }
 
 /************************************************

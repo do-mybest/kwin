@@ -102,6 +102,8 @@ public:
         m_eglBackend = eglBackend;
     }
 
+    clockid_t timestampClock() const;
+
 Q_SIGNALS:
     void outputAdded(DrmOutput *output);
     void outputRemoved(DrmOutput *output);
@@ -129,6 +131,7 @@ private:
     bool m_deleteBufferAfterPageFlip;
     gbm_device* m_gbmDevice;
     EGLDisplay m_eglDisplay = EGL_NO_DISPLAY;
+    clockid_t m_timestampClock;
 
 // all available planes: primarys, cursors and overlays
     QVector<DrmPlane*> m_planes;

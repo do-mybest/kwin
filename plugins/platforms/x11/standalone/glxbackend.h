@@ -10,15 +10,15 @@
 #define KWIN_GLX_BACKEND_H
 #include "backend.h"
 #include "texture.h"
-#include "x11eventfilter.h"
 
 #include <xcb/glx.h>
 #include <epoxy/glx.h>
 #include <fixx11h.h>
-#include <memory>
 
 namespace KWin
 {
+
+class VsyncMonitor;
 
 // GLX_MESA_swap_interval
 using glXSwapIntervalMESA_func = int (*)(unsigned int interval);
@@ -34,27 +34,13 @@ public:
     int mipmap;
 };
 
-
-// ------------------------------------------------------------------
-
-
-class SwapEventFilter : public X11EventFilter
-{
-public:
-    SwapEventFilter(xcb_drawable_t drawable, xcb_glx_drawable_t glxDrawable);
-    bool event(xcb_generic_event_t *event) override;
-
-private:
-    xcb_drawable_t m_drawable;
-    xcb_glx_drawable_t m_glxDrawable;
-};
-
-
 /**
  * @brief OpenGL Backend using GLX over an X overlay window.
  */
-class GlxBackend : public OpenGLBackend
+class GlxBackend : public QObject, public OpenGLBackend
 {
+    Q_OBJECT
+
 public:
     GlxBackend(Display *display);
     ~GlxBackend() override;
@@ -69,6 +55,7 @@ public:
     void init() override;
 
 private:
+    void vblank(std::chrono::nanoseconds timestamp);
     void present(const QRegion &damage);
     bool initBuffer();
     bool checkVersion();
@@ -88,19 +75,18 @@ private:
      * @brief The OverlayWindow used by this Backend.
      */
     OverlayWindow *m_overlayWindow;
+    VsyncMonitor *m_vsyncMonitor;
     Window window;
     GLXFBConfig fbconfig;
     GLXWindow glxWindow;
     GLXContext ctx;
     QHash<xcb_visualid_t, FBConfigInfo *> m_fbconfigHash;
     QHash<xcb_visualid_t, int> m_visualDepthHash;
-    std::unique_ptr<SwapEventFilter> m_swapEventFilter;
     int m_bufferAge;
     bool m_haveMESACopySubBuffer = false;
     bool m_haveMESASwapControl = false;
     bool m_haveEXTSwapControl = false;
     bool m_haveSGISwapControl = false;
-    bool m_haveINTELSwapEvent = false;
     Display *m_x11Display;
     friend class GlxTexture;
 };

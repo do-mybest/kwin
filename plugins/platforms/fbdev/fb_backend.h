@@ -18,6 +18,8 @@
 namespace KWin
 {
 
+class SoftwareVsyncMonitor;
+
 class FramebufferOutput : public AbstractWaylandOutput
 {
     Q_OBJECT
@@ -26,7 +28,16 @@ public:
     FramebufferOutput(QObject *parent = nullptr);
     ~FramebufferOutput() override = default;
 
+    RenderLoop *renderLoop() const override;
+    SoftwareVsyncMonitor *vsyncMonitor() const;
+
     void init(const QSize &pixelSize, const QSize &physicalSize);
+
+private:
+    void vblank(std::chrono::nanoseconds timestamp);
+
+    RenderLoop *m_renderLoop;
+    SoftwareVsyncMonitor *m_vsyncMonitor;
 };
 
 class KWIN_EXPORT FramebufferBackend : public Platform

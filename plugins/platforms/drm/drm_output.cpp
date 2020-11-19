@@ -16,6 +16,7 @@
 #include "logind.h"
 #include "logging.h"
 #include "main.h"
+#include "renderloop.h"
 #include "screens_drm.h"
 #include "wayland_server.h"
 // KWayland
@@ -43,6 +44,7 @@ DrmOutput::DrmOutput(DrmBackend *backend, DrmGpu *gpu)
     : AbstractWaylandOutput(backend)
     , m_backend(backend)
     , m_gpu(gpu)
+    , m_renderLoop(new RenderLoop(this))
 {
 }
 
@@ -50,6 +52,11 @@ DrmOutput::~DrmOutput()
 {
     Q_ASSERT(!m_pageFlipPending);
     teardown();
+}
+
+RenderLoop *DrmOutput::renderLoop() const
+{
+    return m_renderLoop;
 }
 
 void DrmOutput::teardown()
@@ -852,6 +859,7 @@ bool DrmOutput::presentAtomically(DrmBuffer *buffer)
             m_lastWorkingState.planeTransformations = m_primaryPlane->transformation();
         }
         m_lastWorkingState.valid = true;
+        m_renderLoop->setRefreshRate(refreshRateForMode(&m_mode));
     }
     m_pageFlipPending = true;
     return true;

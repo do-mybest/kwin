@@ -61,6 +61,7 @@ public:
     void initOutputs();
     void updateOutputs();
 
+    RenderLoop *renderLoop() const override;
     Outputs outputs() const override;
     Outputs enabledOutputs() const override;
 
@@ -82,6 +83,7 @@ private:
 
     template <typename T>
     void doUpdateOutputs();
+    void updateRefreshRate();
 
     XInputIntegration *m_xinputIntegration = nullptr;
     QThread *m_openGLFreezeProtectionThread = nullptr;
@@ -89,6 +91,7 @@ private:
     Display *m_x11Display;
     QScopedPointer<WindowSelector> m_windowSelector;
     QScopedPointer<X11EventFilter> m_screenEdgesFilter;
+    RenderLoop *m_renderLoop;
 
     QVector<X11Output*> m_outputs;
 };

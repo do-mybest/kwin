@@ -4,9 +4,11 @@ set(FBDEV_SOURCES
     scene_qpainter_fb_backend.cpp
 )
 
+include_directories(${CMAKE_SOURCE_DIR}/platformsupport/vsyncconvenience)
+
 add_library(KWinWaylandFbdevBackend MODULE ${FBDEV_SOURCES})
 set_target_properties(KWinWaylandFbdevBackend PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/org.kde.kwin.waylandbackends/")
-target_link_libraries(KWinWaylandFbdevBackend kwin SceneQPainterBackend)
+target_link_libraries(KWinWaylandFbdevBackend kwin SceneQPainterBackend VsyncSupport)
 
 install(
     TARGETS

@@ -8,8 +8,11 @@
 */
 #include "egl_x11_backend.h"
 // kwin
+#include "main.h"
 #include "screens.h"
+#include "softwarevsyncmonitor.h"
 #include "x11windowed_backend.h"
+#include "x11windowed_output.h"
 // kwin libs
 #include <kwinglplatform.h>
 
@@ -63,6 +66,9 @@ bool EglX11Backend::usesOverlayWindow() const
 
 QRegion EglX11Backend::beginFrame(int screenId)
 {
+    X11WindowedOutput *output = static_cast<X11WindowedOutput *>(kwinApp()->platform()->findOutput(screenId));
+    output->vsyncMonitor()->start();
+
     makeContextCurrent(m_surfaces.at(screenId));
     setupViewport(screenId);
     return screens()->geometry(screenId);

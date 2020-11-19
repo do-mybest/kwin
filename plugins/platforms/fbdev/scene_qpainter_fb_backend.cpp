@@ -11,7 +11,9 @@
 #include "composite.h"
 #include "logind.h"
 #include "cursor.h"
+#include "renderloop.h"
 #include "virtual_terminal.h"
+#include "softwarevsyncmonitor.h"
 // Qt
 #include <QPainter>
 
@@ -33,16 +35,30 @@ FramebufferQPainterBackend::FramebufferQPainterBackend(FramebufferBackend *backe
                           m_backend->bytesPerLine(), m_backend->imageFormat());
     m_backBuffer.fill(Qt::black);
 
-    connect(VirtualTerminal::self(), &VirtualTerminal::activeChanged, this,
-        [] (bool active) {
-            if (active) {
-                Compositor::self()->bufferSwapComplete();
-                Compositor::self()->addRepaintFull();
-            } else {
-                Compositor::self()->aboutToSwapBuffers();
-            }
+    connect(VirtualTerminal::self(), &VirtualTerminal::activeChanged, this, [this](bool active) {
+        if (active) {
+            activate();
+        } else {
+            deactivate();
         }
-    );
+    });
+}
+
+void FramebufferQPainterBackend::activate()
+{
+    const QVector<AbstractOutput *> outputs = m_backend->outputs();
+    for (AbstractOutput *output : outputs) {
+        output->renderLoop()->uninhibit();
+    }
+    Compositor::self()->addRepaintFull();
+}
+
+void FramebufferQPainterBackend::deactivate()
+{
+    const QVector<AbstractOutput *> outputs = m_backend->outputs();
+    for (AbstractOutput *output : outputs) {
+        output->renderLoop()->inhibit();
+    }
 }
 
 FramebufferQPainterBackend::~FramebufferQPainterBackend() = default;
@@ -61,7 +77,9 @@ bool FramebufferQPainterBackend::needsFullRepaint(int screenId) const
 
 void FramebufferQPainterBackend::beginFrame(int screenId)
 {
-    Q_UNUSED(screenId)
+    FramebufferOutput *output = static_cast<FramebufferOutput *>(m_backend->findOutput(screenId));
+    output->vsyncMonitor()->start();
+
     m_needsFullRepaint = true;
 }
 

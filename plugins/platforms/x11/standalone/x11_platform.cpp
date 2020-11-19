@@ -32,6 +32,7 @@
 #include "x11_decoration_renderer.h"
 #include "x11_output.h"
 #include "xcbutils.h"
+#include "renderloop.h"
 
 #include <kwinxrenderutils.h>
 
@@ -49,6 +50,7 @@ namespace KWin
 X11StandalonePlatform::X11StandalonePlatform(QObject *parent)
     : Platform(parent)
     , m_x11Display(QX11Info::display())
+    , m_renderLoop(new RenderLoop(this))
 {
 #if HAVE_X11_XINPUT
     if (!qEnvironmentVariableIsSet("KWIN_NO_XI2")) {
@@ -415,11 +417,13 @@ QVector<CompositingType> X11StandalonePlatform::supportedCompositors() const
 void X11StandalonePlatform::initOutputs()
 {
     doUpdateOutputs<Xcb::RandR::ScreenResources>();
+    updateRefreshRate();
 }
 
 void X11StandalonePlatform::updateOutputs()
 {
     doUpdateOutputs<Xcb::RandR::CurrentResources>();
+    updateRefreshRate();
 }
 
 template <typename T>
@@ -544,6 +548,52 @@ Outputs X11StandalonePlatform::outputs() const
 Outputs X11StandalonePlatform::enabledOutputs() const
 {
     return m_outputs;
+}
+
+RenderLoop *X11StandalonePlatform::renderLoop() const
+{
+    return m_renderLoop;
+}
+
+static bool refreshRate_compare(const AbstractOutput *first, const AbstractOutput *smallest)
+{
+    return first->refreshRate() < smallest->refreshRate();
+}
+
+static int currentRefreshRate()
+{
+    const int refreshRate = qEnvironmentVariableIntValue("KWIN_X11_REFRESH_RATE");
+    if (refreshRate) {
+        return refreshRate;
+    }
+
+    const QVector<AbstractOutput *> outputs = kwinApp()->platform()->enabledOutputs();
+    if (outputs.isEmpty()) {
+        return 60000;
+    }
+
+    const QString syncDisplayDevice = qEnvironmentVariable("__GL_SYNC_DISPLAY_DEVICE");
+    if (!syncDisplayDevice.isEmpty()) {
+        for (const AbstractOutput *output : outputs) {
+            if (output->name() == syncDisplayDevice) {
+                return output->refreshRate();
+            }
+        }
+    }
+
+    auto syncIt = std::min_element(outputs.begin(), outputs.end(), refreshRate_compare);
+    return (*syncIt)->refreshRate();
+}
+
+void X11StandalonePlatform::updateRefreshRate()
+{
+    int refreshRate = currentRefreshRate();
+    if (refreshRate <= 0) {
+        qCWarning(KWIN_X11STANDALONE) << "Bogus refresh rate" << refreshRate;
+        refreshRate = 60000;
+    }
+
+    m_renderLoop->setRefreshRate(refreshRate);
 }
 
 }

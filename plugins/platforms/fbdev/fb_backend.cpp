@@ -11,7 +11,9 @@
 #include "composite.h"
 #include "logging.h"
 #include "logind.h"
+#include "renderloop_p.h"
 #include "scene_qpainter_fb_backend.h"
+#include "softwarevsyncmonitor.h"
 #include "outputscreens.h"
 #include "virtual_terminal.h"
 #include "udev.h"
@@ -26,20 +28,46 @@
 namespace KWin
 {
 
-FramebufferOutput::FramebufferOutput(QObject *parent):
-    AbstractWaylandOutput(parent)
+FramebufferOutput::FramebufferOutput(QObject *parent)
+    : AbstractWaylandOutput(parent)
+    , m_renderLoop(new RenderLoop(this))
+    , m_vsyncMonitor(SoftwareVsyncMonitor::create(this))
 {
+    // TODO: Prefer FBIO_WAITFORVSYNC ioctl over the software vsync monitor.
+
     setName("FB-0");
+
+    connect(m_vsyncMonitor, &VsyncMonitor::vblankOccurred, this, &FramebufferOutput::vblank);
+}
+
+RenderLoop *FramebufferOutput::renderLoop() const
+{
+    return m_renderLoop;
+}
+
+SoftwareVsyncMonitor *FramebufferOutput::vsyncMonitor() const
+{
+    return m_vsyncMonitor;
 }
 
 void FramebufferOutput::init(const QSize &pixelSize, const QSize &physicalSize)
 {
+    const int refreshRate = 60000; // TODO: get actual refresh rate of fb device?
+    m_renderLoop->setRefreshRate(refreshRate);
+    m_vsyncMonitor->setRefreshRate(refreshRate);
+
     KWaylandServer::OutputDeviceInterface::Mode mode;
     mode.id = 0;
     mode.size = pixelSize;
     mode.flags = KWaylandServer::OutputDeviceInterface::ModeFlag::Current;
-    mode.refreshRate = 60000;  // TODO: get actual refresh rate of fb device?
+    mode.refreshRate = refreshRate;
     initInterfaces("model_TODO", "manufacturer_TODO", "UUID_TODO", physicalSize, { mode }, {});
+}
+
+void FramebufferOutput::vblank(std::chrono::nanoseconds timestamp)
+{
+    RenderLoopPrivate *renderLoopPrivate = RenderLoopPrivate::get(m_renderLoop);
+    renderLoopPrivate->notifyFrameCompleted(timestamp);
 }
 
 FramebufferBackend::FramebufferBackend(QObject *parent)

@@ -7,9 +7,11 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 #include "scene_qpainter_virtual_backend.h"
-#include "virtual_backend.h"
 #include "cursor.h"
 #include "screens.h"
+#include "softwarevsyncmonitor.h"
+#include "virtual_backend.h"
+#include "virtual_output.h"
 
 #include <QPainter>
 
@@ -38,7 +40,8 @@ bool VirtualQPainterBackend::needsFullRepaint(int screenId) const
 
 void VirtualQPainterBackend::beginFrame(int screenId)
 {
-    Q_UNUSED(screenId)
+    VirtualOutput *output = static_cast<VirtualOutput *>(m_backend->findOutput(screenId));
+    output->vsyncMonitor()->start();
 }
 
 void VirtualQPainterBackend::createOutputs()

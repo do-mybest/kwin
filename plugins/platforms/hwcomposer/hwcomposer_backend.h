@@ -44,10 +44,12 @@ public:
     ~HwcomposerOutput() override;
     bool isValid() const;
 
+    RenderLoop *renderLoop() const override;
     void updateDpms(KWaylandServer::OutputInterface::DpmsMode mode) override;
 Q_SIGNALS:
     void dpmsModeRequested(KWaylandServer::OutputInterface::DpmsMode mode);
 private:
+    RenderLoop *m_renderLoop;
     QSize m_pixelSize;
     hwc_composer_device_1_t *m_device;
 };
