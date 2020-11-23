@@ -34,7 +34,7 @@ private:
 
 class FTraceTrackDuration {
 public:
-    FTraceTrackDuration(const char *message);
+    FTraceTrackDuration(const QByteArray &message);
     ~FTraceTrackDuration();
 private:
     QByteArray m_message;

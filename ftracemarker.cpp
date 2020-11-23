@@ -95,7 +95,7 @@ bool FTraceLogger::open()
 
 static qulonglong s_context = 0;
 
-FTraceTrackDuration::FTraceTrackDuration(const char *message)
+FTraceTrackDuration::FTraceTrackDuration(const QByteArray &message)
     : m_ctx(s_context++)
 {
     if (!FTraceLogger::self()->isActive()) {

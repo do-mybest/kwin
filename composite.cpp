@@ -640,7 +640,15 @@ void Compositor::handleFrameRequested(RenderLoop *renderLoop)
         win->getDamageRegionReply();
     }
 
-    QScopedPointer<FTraceTrackDuration> paintTrace(new FTraceTrackDuration("Paint"));
+    QScopedPointer<FTraceTrackDuration> ftraceMarker;
+    if (FTraceLogger::self()->isActive()) {
+        QString trackName = QLatin1String("Paint");
+        const QString outputName = screens()->name(screenId);
+        if (!outputName.isEmpty()) {
+            trackName += QLatin1String(" (") + outputName + QLatin1String(")");
+        }
+        ftraceMarker.reset(new FTraceTrackDuration(trackName.toUtf8()));
+    }
 
     // Skip windows that are not yet ready for being painted and if screen is locked skip windows
     // that are neither lockscreen nor inputmethod windows.
