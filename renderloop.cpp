@@ -65,6 +65,18 @@ void RenderLoopPrivate::scheduleRepaint()
         break;
     }
 
+    switch (options->renderTimeEstimator()) {
+    case RenderTimeEstimatorMin:
+        renderTime = std::max(renderTime, renderJournal.minimum());
+        break;
+    case RenderTimeEstimatorMax:
+        renderTime = std::max(renderTime, renderJournal.maximum());
+        break;
+    case RenderTimeEstimatorAvg:
+        renderTime = std::max(renderTime, renderJournal.average());
+        break;
+    }
+
     std::chrono::nanoseconds nextRenderTimestamp = nextPresentationTimestamp - renderTime - safetyMargin;
 
     // If we can't render the frame before the deadline, start compositing immediately.
@@ -148,10 +160,12 @@ void RenderLoop::beginFrame()
 {
     d->pendingFrameCount++;
     d->pendingRepaint = false;
+    d->renderJournal.beginFrame();
 }
 
 void RenderLoop::endFrame()
 {
+    d->renderJournal.endFrame();
 }
 
 void RenderLoop::discardFrame()

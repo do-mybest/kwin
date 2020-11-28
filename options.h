@@ -50,6 +50,12 @@ enum LatencyPolicy {
     LatencyExtremelyHigh,
 };
 
+enum RenderTimeEstimator {
+    RenderTimeEstimatorMin,
+    RenderTimeEstimatorMax,
+    RenderTimeEstimatorAvg,
+};
+
 class Settings;
 
 class KWIN_EXPORT Options : public QObject
@@ -57,6 +63,7 @@ class KWIN_EXPORT Options : public QObject
     Q_OBJECT
     Q_ENUMS(XwaylandCrashPolicy)
     Q_ENUMS(LatencyPolicy)
+    Q_ENUMS(RenderTimeEstimator)
     Q_PROPERTY(FocusPolicy focusPolicy READ focusPolicy WRITE setFocusPolicy NOTIFY focusPolicyChanged)
     Q_PROPERTY(XwaylandCrashPolicy xwaylandCrashPolicy READ xwaylandCrashPolicy WRITE setXwaylandCrashPolicy NOTIFY xwaylandCrashPolicyChanged)
     Q_PROPERTY(int xwaylandMaxCrashCount READ xwaylandMaxCrashCount WRITE setXwaylandMaxCrashCount NOTIFY xwaylandMaxCrashCountChanged)
@@ -185,6 +192,7 @@ class KWIN_EXPORT Options : public QObject
     Q_PROPERTY(KWin::OpenGLPlatformInterface glPlatformInterface READ glPlatformInterface WRITE setGlPlatformInterface NOTIFY glPlatformInterfaceChanged)
     Q_PROPERTY(bool windowsBlockCompositing READ windowsBlockCompositing WRITE setWindowsBlockCompositing NOTIFY windowsBlockCompositingChanged)
     Q_PROPERTY(LatencyPolicy latencyPolicy READ latencyPolicy WRITE setLatencyPolicy NOTIFY latencyPolicyChanged)
+    Q_PROPERTY(RenderTimeEstimator renderTimeEstimator READ renderTimeEstimator WRITE setRenderTimeEstimator NOTIFY renderTimeEstimatorChanged)
 public:
 
     explicit Options(QObject *parent = nullptr);
@@ -593,6 +601,7 @@ public:
 
     QStringList modifierOnlyDBusShortcut(Qt::KeyboardModifier mod) const;
     LatencyPolicy latencyPolicy() const;
+    RenderTimeEstimator renderTimeEstimator() const;
 
     // setters
     void setFocusPolicy(FocusPolicy focusPolicy);
@@ -652,6 +661,7 @@ public:
     void setWindowsBlockCompositing(bool set);
     void setMoveMinimizedWindowsToEndOfTabBoxFocusChain(bool set);
     void setLatencyPolicy(LatencyPolicy policy);
+    void setRenderTimeEstimator(RenderTimeEstimator estimator);
 
     // default values
     static WindowOperation defaultOperationTitlebarDblClick() {
@@ -753,6 +763,9 @@ public:
     static LatencyPolicy defaultLatencyPolicy() {
         return LatencyMedium;
     }
+    static RenderTimeEstimator defaultRenderTimeEstimator() {
+        return RenderTimeEstimatorAvg;
+    }
     /**
      * Performs loading all settings except compositing related.
      */
@@ -825,6 +838,7 @@ Q_SIGNALS:
     void animationSpeedChanged();
     void latencyPolicyChanged();
     void configChanged();
+    void renderTimeEstimatorChanged();
 
 private:
     void setElectricBorders(int borders);
@@ -853,6 +867,7 @@ private:
     XwaylandCrashPolicy m_xwaylandCrashPolicy;
     int m_xwaylandMaxCrashCount;
     LatencyPolicy m_latencyPolicy;
+    RenderTimeEstimator m_renderTimeEstimator;
 
     CompositingType m_compositingMode;
     bool m_useCompositing;
