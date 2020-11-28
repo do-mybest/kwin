@@ -444,7 +444,7 @@ void Toplevel::addRepaint(const QRegion &region)
     if (!effectWindow() || !effectWindow()->sceneWindow()) {
         return;
     }
-    effectWindow()->sceneWindow()->addRepaint(region);
+    effectWindow()->sceneWindow()->addRepaint(region.translated(pos()));
 }
 
 void Toplevel::addLayerRepaint(const QRect &rect)
@@ -462,7 +462,7 @@ void Toplevel::addLayerRepaint(const QRegion &region)
     if (!effectWindow() || !effectWindow()->sceneWindow()) {
         return;
     }
-    effectWindow()->sceneWindow()->addLayerRepaint(region);
+    effectWindow()->sceneWindow()->addRepaint(region);
 }
 
 void Toplevel::addRepaintFull()
