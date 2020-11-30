@@ -255,6 +255,8 @@ bool setupWaylandConnection(AdditionalWaylandInterfaces flags = AdditionalWaylan
  */
 void destroyWaylandConnection();
 
+xdg_wm_base* getXdgWmBase();
+
 KWayland::Client::ConnectionThread *waylandConnection();
 KWayland::Client::Compositor *waylandCompositor();
 KWayland::Client::SubCompositor *waylandSubCompositor();

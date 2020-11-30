@@ -38,6 +38,11 @@ set_package_properties(Qt5Test PROPERTIES
 add_feature_info("Qt5Test" Qt5Test_FOUND "Required for building tests")
 if (NOT Qt5Test_FOUND)
     set(BUILD_TESTING OFF CACHE BOOL "Build the testing tree.")
+else()
+    find_package(QtWaylandScanner REQUIRED)
+    find_package(PkgConfig)
+    pkg_check_modules(WaylandProtocols QUIET wayland-protocols)
+    pkg_get_variable(WaylandProtocols_ProtocolsDirectory wayland-protocols pkgdatadir)
 endif()
 
 include(KDEInstallDirs)

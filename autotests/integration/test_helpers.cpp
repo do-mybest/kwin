@@ -260,6 +260,11 @@ void MockInputMethod::zwp_input_method_v1_deactivate(struct ::zwp_input_method_c
     }
 }
 
+xdg_wm_base* getXdgWmBase()
+{
+    return *s_waylandConnection.xdgShellStable;
+}
+
 bool setupWaylandConnection(AdditionalWaylandInterfaces flags)
 {
     if (s_waylandConnection.connection) {

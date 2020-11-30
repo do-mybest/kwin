@@ -54,6 +54,11 @@ function(integrationTest)
     endif()
 endfunction()
 
+ecm_add_qtwayland_client_protocol(XDGSHELL_SRCS
+    PROTOCOL ${WaylandProtocols_ProtocolsDirectory}/stable/xdg-shell/xdg-shell.xml
+    BASENAME xdg-shell
+)
+
 integrationTest(NAME testDontCrashGlxgears SRCS dont_crash_glxgears.cpp)
 integrationTest(NAME testLockScreen SRCS lockscreen.cpp)
 integrationTest(WAYLAND_ONLY NAME testDecorationInput SRCS decoration_input_test.cpp)
@@ -68,7 +73,7 @@ integrationTest(NAME testDebugConsole SRCS debug_console_test.cpp)
 integrationTest(NAME testDontCrashEmptyDeco SRCS dont_crash_empty_deco.cpp)
 integrationTest(WAYLAND_ONLY NAME testPlasmaSurface SRCS plasma_surface_test.cpp)
 integrationTest(WAYLAND_ONLY NAME testMaximized SRCS maximize_test.cpp)
-integrationTest(WAYLAND_ONLY NAME testXdgShellClient SRCS xdgshellclient_test.cpp)
+integrationTest(WAYLAND_ONLY NAME testXdgShellClient SRCS xdgshellclient_test.cpp ${XDGSHELL_SRCS} LIBS wayland-client)
 integrationTest(WAYLAND_ONLY NAME testDontCrashNoBorder SRCS dont_crash_no_border.cpp)
 integrationTest(NAME testXwaylandSelections SRCS xwayland_selections_test.cpp)
 integrationTest(WAYLAND_ONLY NAME testSceneOpenGL SRCS scene_opengl_test.cpp )

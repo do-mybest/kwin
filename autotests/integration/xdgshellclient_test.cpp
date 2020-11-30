@@ -19,6 +19,7 @@
 #include "screens.h"
 #include "wayland_server.h"
 #include "workspace.h"
+#include "xdgshellclient.h"
 
 #include <KDecoration2/DecoratedClient>
 #include <KDecoration2/Decoration>
@@ -38,6 +39,7 @@
 
 #include <KWaylandServer/clientconnection.h>
 #include <KWaylandServer/display.h>
+#include <KWaylandServer/xdgshell_interface.h>
 
 #include <QDBusConnection>
 
@@ -47,6 +49,9 @@
 #include <unistd.h>
 
 #include <csignal>
+
+// wayland
+#include "qwayland-xdg-shell.h"
 
 using namespace KWin;
 using namespace KWayland::Client;
@@ -99,10 +104,94 @@ private Q_SLOTS:
     void testXdgWindowGeometryInteractiveResize();
     void testXdgWindowGeometryFullScreen();
     void testXdgWindowGeometryMaximize();
+    void testXdgWindowReactive();
+    void testXdgWindowRepositioning();
     void testPointerInputTransform();
     void testReentrantSetFrameGeometry();
     void testDoubleMaximize();
 };
+
+class TestXdgPopup : public QObject, public QtWayland::xdg_popup
+{
+    Q_OBJECT
+
+public:
+    TestXdgPopup(struct ::xdg_popup *obj) : QtWayland::xdg_popup(obj) {}
+    Q_SIGNAL void configRequested();
+    void xdg_popup_configure(int32_t, int32_t, int32_t, int32_t) override {
+        Q_EMIT configRequested();
+    }
+};
+
+void TestXdgShellClient::testXdgWindowReactive()
+{
+    auto wmBase = QtWayland::xdg_wm_base(Test::getXdgWmBase());
+
+    auto positioner = QtWayland::xdg_positioner(wmBase.create_positioner());
+    positioner.set_size(10, 10);
+    positioner.set_anchor_rect(10, 10, 10, 10);
+    positioner.set_reactive();
+
+    QScopedPointer<Surface> rootSurface(Test::createSurface());
+    QScopedPointer<Surface> childSurface(Test::createSurface());
+
+    auto root = QtWayland::xdg_surface(wmBase.get_xdg_surface(rootSurface.data()->operator wl_surface*()));
+    auto toplevel = QtWayland::xdg_toplevel(root.get_toplevel());
+    Q_UNUSED(toplevel)
+
+    auto child = QtWayland::xdg_surface(wmBase.get_xdg_surface(childSurface.data()->operator wl_surface*()));
+    auto popup = new TestXdgPopup(root.get_popup(child.object(), positioner.object()));
+
+    auto deferred = qScopeGuard([popup](){ delete popup; });
+
+    auto rootClient = Test::renderAndWaitForShown(rootSurface.data(), QSize(50, 50), Qt::cyan);
+    auto childClient = Test::renderAndWaitForShown(childSurface.data(), QSize(10, 10), Qt::cyan);
+
+    QVERIFY(rootClient);
+    QVERIFY(childClient);
+
+    QSignalSpy moveSpy(childClient, &AbstractClient::geometryChanged);
+    QVERIFY(moveSpy.isValid());
+
+    rootClient->move(rootClient->x()+20, rootClient->y()+20);
+
+    QVERIFY(moveSpy.wait());
+    QCOMPARE(moveSpy.count(), 1);
+}
+
+void TestXdgShellClient::testXdgWindowRepositioning()
+{
+    auto wmBase = QtWayland::xdg_wm_base(Test::getXdgWmBase());
+
+    auto positioner = QtWayland::xdg_positioner(wmBase.create_positioner());
+    positioner.set_size(10, 10);
+    positioner.set_anchor_rect(10, 10, 10, 10);
+
+    auto otherPositioner = QtWayland::xdg_positioner(wmBase.create_positioner());
+    otherPositioner.set_size(50, 50);
+    otherPositioner.set_anchor_rect(10, 10, 10, 10);
+
+    QScopedPointer<Surface> rootSurface(Test::createSurface());
+    QScopedPointer<Surface> childSurface(Test::createSurface());
+    auto root = QtWayland::xdg_surface(wmBase.get_xdg_surface(rootSurface.data()->operator wl_surface*()));
+    auto child = QtWayland::xdg_surface(wmBase.get_xdg_surface(childSurface.data()->operator wl_surface*()));
+    auto popup = new TestXdgPopup(root.get_popup(child.object(), positioner.object()));
+    auto deferred = qScopeGuard([popup](){ delete popup; });
+
+    auto rootClient = Test::renderAndWaitForShown(rootSurface.data(), QSize(100, 100), Qt::cyan);
+    auto childClient = Test::renderAndWaitForShown(childSurface.data(), QSize(10, 10), Qt::cyan);
+
+    QVERIFY(rootClient);
+    QVERIFY(childClient);
+
+    QSignalSpy reconfigureSpy(qobject_cast<QObject*>(popup), SIGNAL(configureRequested(QRect, quint32)));
+    QVERIFY(reconfigureSpy.isValid());
+
+    popup->reposition(otherPositioner.object(), 500000);
+
+    QVERIFY(reconfigureSpy.wait());
+    QCOMPARE(reconfigureSpy.count(), 1);
+}
 
 void TestXdgShellClient::initTestCase()
 {

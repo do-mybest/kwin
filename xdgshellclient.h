@@ -243,6 +243,10 @@ public:
     bool wantsInput() const override;
     bool takeFocus() override;
     void installPlasmaShellSurface(KWaylandServer::PlasmaShellSurfaceInterface *shellSurface) override;
+    bool followsParent() const;
+    QSize followsParentSize() const;
+    quint32 followsParentSerial() const;
+    void relayout();
 
 protected:
     bool acceptsFocus() const override;
@@ -250,6 +254,8 @@ protected:
 
 private:
     void handleGrabRequested(KWaylandServer::SeatInterface *seat, quint32 serial);
+    void handlePositionerBindings();
+    void reposition(quint32 token);
     void initialize();
 
     KWaylandServer::XdgPopupInterface *m_shellSurface;
