@@ -20,7 +20,7 @@
 #endif
 #include "abstract_client.h"
 #include "effects_x11.h"
-#include "eglonxbackend.h"
+#include "eglbackend.h"
 #include "keyboard_input.h"
 #include "logging.h"
 #include "screens_xrandr.h"
@@ -112,7 +112,7 @@ OpenGLBackend *X11StandalonePlatform::createOpenGLBackend()
         }
 #endif
     case EglPlatformInterface:
-        return new EglOnXBackend(m_x11Display);
+        return new EglBackend(m_x11Display);
     default:
         // no backend available
         return nullptr;
